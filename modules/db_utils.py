@@ -1,5 +1,6 @@
 import mysql.connector
 from datetime import datetime
+import os
 
 MYSQL_CONFIG = {
     'host': 'localhost',
@@ -114,13 +115,28 @@ def get_all_items():
     return items
 
 def delete_item(item_id):
-    """Deletes an item by id."""
+    """Deletes an item by id and removes its associated image file."""
     conn = connect()
     cur = conn.cursor()
+    
+    # First, get the item to check if it has an image
+    cur.execute("SELECT image_path FROM items WHERE id = %s", (item_id,))
+    result = cur.fetchone()
+    image_path = result[0] if result and result[0] else None
+    
+    # Delete the item from database
     cur.execute("DELETE FROM items WHERE id = %s", (item_id,))
     conn.commit()
     cur.close()
     conn.close()
+    
+    # Delete the associated image file if it exists
+    if image_path and os.path.exists(image_path):
+        try:
+            os.remove(image_path)
+            print(f"Image file deleted: {image_path}")
+        except OSError as e:
+            print(f"Error deleting image file {image_path}: {e}")
 
 # ----------- Sales & Sale Items -----------
 def start_sale(store_id):

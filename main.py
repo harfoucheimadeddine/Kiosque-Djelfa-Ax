@@ -131,10 +131,11 @@ def enhanced_inventory_tab(notebook):
             return
         vals = product_table.item(selected)["values"]
         item_id = vals[0]
+        item_name = vals[1]
         if messagebox.askyesno("تأكيد", "هل تريد حذف المنتج؟"):
             delete_item(item_id)
             load_products()
-            messagebox.showinfo("تم", "تم حذف المنتج بنجاح")
+            messagebox.showinfo("تم", f"تم حذف المنتج '{item_name}' وصورته بنجاح")
 
     action_frame = ttk.Frame(tab)
     action_frame.grid(row=3, column=0, pady=5)
