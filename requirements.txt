@@ -1,0 +1,7 @@
+pyqt6
+sqlite-utils
+pillow
+python-barcode
+pyzbar
+opencv-python
+pyinstaller
