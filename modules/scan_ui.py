@@ -1,52 +1,43 @@
 import tkinter as tk
 from tkinter import messagebox
-from PIL import Image, ImageTk
 import modules.db_utils as db_utils
 
-def scan_product_window():
+def scan_window(sale_table):
     def on_enter(event=None):
-        barcode = entry_barcode.get()
-        product = db_utils.get_item_by_barcode(barcode)
-        if product:
-            label_name.config(text=f"المنتج: {product['name']}")
-            label_price.config(text=f"السعر: {product['price']} دج")
-            label_qty.config(text=f"الكمية: {product['quantity']}")
+        code = entry_barcode.get().strip()
+        item = db_utils.get_item_by_barcode(code)
 
-            # Show image if exists
-            if product["image_path"]:
-                try:
-                    img = Image.open(product["image_path"])
-                    img = img.resize((120, 120))
-                    photo = ImageTk.PhotoImage(img)
-                    label_img.config(image=photo, text="")
-                    label_img.image = photo
-                except:
-                    label_img.config(text="❌ خطأ في تحميل الصورة", image="")
-            else:
-                label_img.config(text="لا توجد صورة", image="")
-        else:
-            messagebox.showwarning("⚠️", "لم يتم العثور على المنتج")
+        if not item:
+            messagebox.showerror("❌ خطأ", "المنتج غير موجود!")
+            entry_barcode.delete(0, tk.END)
+            return
+
+        if item["quantity"] <= 0:
+            messagebox.showwarning("⚠️", "الكمية غير كافية في المخزون")
+            return
+
+        total_price = item["price"]
+
+        # Add to sale table
+        sale_table.insert("", "end", values=(item["name"], item["price"], 1, total_price))
+
+        # Decrease stock
+        db_utils.update_item(item["id"], quantity=item["quantity"] - 1)
+
+        # Record sale
+        db_utils.record_sale(item["id"], 1, total_price)
+
+        messagebox.showinfo("✅", f"تمت إضافة {item['name']} للبيع")
         entry_barcode.delete(0, tk.END)
 
     window = tk.Toplevel()
-    window.title("مسح المنتجات")
-    window.geometry("400x400")
+    window.title("📷 مسح الباركود")
+    window.geometry("400x200")
 
-    tk.Label(window, text="امسح الباركود").pack()
-    entry_barcode = tk.Entry(window)
-    entry_barcode.pack()
-    entry_barcode.bind("<Return>", on_enter)  # barcode scanner sends Enter
+    tk.Label(window, text="امسح الباركود هنا:").pack(pady=10)
+    entry_barcode = tk.Entry(window, font=("Arial", 14))
+    entry_barcode.pack(pady=10)
 
-    label_name = tk.Label(window, text="")
-    label_name.pack()
-
-    label_price = tk.Label(window, text="")
-    label_price.pack()
-
-    label_qty = tk.Label(window, text="")
-    label_qty.pack()
-
-    label_img = tk.Label(window, text="")  # Image placeholder
-    label_img.pack()
+    entry_barcode.bind("<Return>", on_enter)  # scanner usually presses Enter
 
     window.mainloop()
